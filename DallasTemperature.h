@@ -269,6 +269,8 @@ public:
 
 #endif
 
+	void blockTillConversionComplete(uint8_t);
+
 private:
 	typedef uint8_t ScratchPad[9];
 
@@ -304,7 +306,6 @@ private:
 	// reads scratchpad and returns the raw temperature
 	int32_t calculateTemperature(const uint8_t*, uint8_t*);
 
-	void blockTillConversionComplete(uint8_t);
 
 	// Returns true if all bytes of scratchPad are '\0'
 	bool isAllZeros(const uint8_t* const scratchPad, const size_t length = 9);
