@@ -150,7 +150,7 @@ public:
 	bool requestTemperaturesByIndex(uint8_t);
 
 	// returns temperature raw value (12 bit integer of 1/128 degrees C)
-	int16_t getTemp(const uint8_t*);
+	int32_t getTemp(const uint8_t*);
 
 	// returns temperature in degrees C
 	float getTempC(const uint8_t*);
@@ -254,10 +254,10 @@ public:
 	static float toCelsius(float);
 
 	// convert from raw to Celsius
-	static float rawToCelsius(int16_t);
+	static float rawToCelsius(int32_t);
 
 	// convert from raw to Fahrenheit
-	static float rawToFahrenheit(int16_t);
+	static float rawToFahrenheit(int32_t);
 
 #if REQUIRESNEW
 
@@ -302,7 +302,7 @@ private:
 	OneWire* _wire;
 
 	// reads scratchpad and returns the raw temperature
-	int16_t calculateTemperature(const uint8_t*, uint8_t*);
+	int32_t calculateTemperature(const uint8_t*, uint8_t*);
 
 	void blockTillConversionComplete(uint8_t);
 
