@@ -617,12 +617,15 @@ int32_t DallasTemperature::calculateTemperature(const uint8_t* deviceAddress,
 	// Detected if signed
     int32_t neg = 0x0;
 	if (scratchPad[TEMP_MSB] & 0x80)
-	    neg = 0x80000000;
+	    neg = 0xFFF80000;
 
 	// detect MAX31850
 	// The temp range on a MAX31850 can far exceed other models, causing an overrun @ 256C
     // Based on the spec sheets for the MAX31850, bit 7 is always 1
-    // Whereas the DS1825 bit 7 is always 0 - https://datasheets.maximintegrated.com/en/ds/DS1825.pdf
+    // Whereas the DS1825 bit 7 is always 0
+    // DS1825   - https://datasheets.maximintegrated.com/en/ds/DS1825.pdf
+    // MAX31850 - https://datasheets.maximintegrated.com/en/ds/MAX31850-MAX31851.pdf
+
 	if (deviceAddress[DSROM_FAMILY] == DS1825MODEL && scratchPad[CONFIGURATION] & 0x80 ) { 
         //Serial.print("  Detected MAX31850");
 		if (scratchPad[TEMP_LSB] & 1) { // Fault Detected
@@ -638,11 +641,13 @@ int32_t DallasTemperature::calculateTemperature(const uint8_t* deviceAddress,
 			    //Serial.println("short to Vdd detected");
 				return DEVICE_FAULT_SHORTVDD_RAW;
 			}
+			else {
+			    // We don't know why there's a fault, exit with disconnect value
+                return DEVICE_DISCONNECTED_RAW;
+			}
 		}
-        // We must mask out
-        //   signed bit 7 on TEMP_MSB 
-        //   bit 1 (reserved) and 0 (fault) on TEMP_LSB
-		fpTemperature = (((int32_t)(scratchPad[TEMP_MSB] & 0x7F)) << 11)
+        // We must mask out bit 1 (reserved) and 0 (fault) on TEMP_LSB
+		fpTemperature = (((int32_t)(scratchPad[TEMP_MSB])) << 11)
 				| (((int32_t)(scratchPad[TEMP_LSB]) & 0xFC) << 3)
 				| neg;
 	} else {
