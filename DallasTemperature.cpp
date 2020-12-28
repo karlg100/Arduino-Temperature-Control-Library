@@ -642,8 +642,8 @@ int32_t DallasTemperature::calculateTemperature(const uint8_t* deviceAddress,
         // We must mask out
         //   signed bit 7 on TEMP_MSB 
         //   bit 1 (reserved) and 0 (fault) on TEMP_LSB
-		fpTemperature = (((int32_t) scratchPad[TEMP_MSB] & 0x7F) << 11)
-				| (((int32_t) scratchPad[TEMP_LSB]) & 0xFC << 3) 
+		fpTemperature = (((int32_t)(scratchPad[TEMP_MSB] & 0x7F)) << 11)
+				| (((int32_t)(scratchPad[TEMP_LSB]) & 0xFC) << 3)
 				| neg;
 	} else {
 		fpTemperature = (((int16_t) scratchPad[TEMP_MSB]) << 11)
