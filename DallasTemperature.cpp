@@ -274,69 +274,67 @@ void DallasTemperature::setResolution(uint8_t newResolution) {
 bool DallasTemperature::setResolution(const uint8_t* deviceAddress,
                                       uint8_t newResolution, bool skipGlobalBitResolutionCalculation) {
 
-  bool success = false;
+	bool success = false;
 
-  // DS1820 and DS18S20 have no resolution configuration register
-  if (deviceAddress[DSROM_FAMILY] == DS18S20MODEL)
-  {
-    success = true;
-  }
-  else
-  {
+	// DS1820 and DS18S20 have no resolution configuration register
+	if (deviceAddress[DSROM_FAMILY] == DS18S20MODEL) {
+		success = true;
+	} else {
+		// handle the sensors with configuration register
+		newResolution = constrain(newResolution, 9, 12);
+		uint8_t newValue = 0;
+		ScratchPad scratchPad;
 
-   // handle the sensors with configuration register
-    newResolution = constrain(newResolution, 9, 12);
-    uint8_t newValue = 0;
-    ScratchPad scratchPad;
+		// we can only update the sensor if it is connected
+		if (isConnected(deviceAddress, scratchPad)) {
+			// MAX31850 have no resolution configuration register
+			// this is also a hack as the MAX31850 Coversion time is 100ms max.
+			// use a low res (~10 by spec, but 9 might work) for faster blocking read times.
+			if (deviceAddress[DSROM_FAMILY] == DS1825MODEL && scratchPad[CONFIGURATION] & 0x80 ) {
+				success = true;
+			} else {
+	      		switch (newResolution) {
+	        		case 12:
+		          		newValue = TEMP_12_BIT;
+		          		break;
+	        		case 11:
+		          		newValue = TEMP_11_BIT;
+		          		break;
+	        		case 10:
+		          		newValue = TEMP_10_BIT;
+		          		break;
+	        		case 9:
+	        		default:
+		          		newValue = TEMP_9_BIT;
+		          		break;
+      			}
+	
+      			// if it needs to be updated we write the new value
+      			if (scratchPad[CONFIGURATION] != newValue) {
+					scratchPad[CONFIGURATION] = newValue;
+        			writeScratchPad(deviceAddress, scratchPad);
+      			}
+      			// done
+      			success = true;
+			}
+    	}
+  	}
 
-    // we can only update the sensor if it is connected
-    if (isConnected(deviceAddress, scratchPad))
-    {
-      switch (newResolution) {
-        case 12:
-          newValue = TEMP_12_BIT;
-          break;
-        case 11:
-          newValue = TEMP_11_BIT;
-          break;
-        case 10:
-          newValue = TEMP_10_BIT;
-          break;
-        case 9:
-        default:
-          newValue = TEMP_9_BIT;
-          break;
-      }
+  	// do we need to update the max resolution used?
+  	if (skipGlobalBitResolutionCalculation == false) {
+    	bitResolution = newResolution;
+    	if (devices > 1) {
+      		for (uint8_t i = 0; i < devices; i++) {
+        		if (bitResolution == 12) break;
+        		DeviceAddress deviceAddr;
+        		getAddress(deviceAddr, i);
+        		uint8_t b = getResolution(deviceAddr);
+        		if (b > bitResolution) bitResolution = b;
+      		}
+    	}
+  	}
 
-      // if it needs to be updated we write the new value
-      if (scratchPad[CONFIGURATION] != newValue)
-      {
-		scratchPad[CONFIGURATION] = newValue;
-        writeScratchPad(deviceAddress, scratchPad);
-      }
-      // done
-      success = true;
-    }
-  }
-
-  // do we need to update the max resolution used?
-  if (skipGlobalBitResolutionCalculation == false)
-  {
-    bitResolution = newResolution;
-    if (devices > 1)
-    {
-      for (uint8_t i = 0; i < devices; i++)
-      {
-        if (bitResolution == 12) break;
-        DeviceAddress deviceAddr;
-        getAddress(deviceAddr, i);
-        uint8_t b = getResolution(deviceAddr);
-        if (b > bitResolution) bitResolution = b;
-      }
-    }
-  }
-
-  return success;
+  	return success;
 }
 
 
@@ -355,6 +353,11 @@ uint8_t DallasTemperature::getResolution(const uint8_t* deviceAddress) {
 
 	ScratchPad scratchPad;
 	if (isConnected(deviceAddress, scratchPad)) {
+
+		// MAX31850 have no resolution configuration register
+		if (deviceAddress[DSROM_FAMILY] == DS1825MODEL && scratchPad[CONFIGURATION] & 0x80 )
+			return 12;
+
 		switch (scratchPad[CONFIGURATION]) {
 		case TEMP_12_BIT:
 			return 12;
