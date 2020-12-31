@@ -138,7 +138,7 @@ public:
 	bool requestTemperaturesByIndex(uint8_t);
 
 	// returns temperature raw value (12 bit integer of 1/128 degrees C)
-	int32_t getTemp(const uint8_t*);
+	int16_t getTemp(const uint8_t*);
 
 	// returns temperature in degrees C
 	float getTempC(const uint8_t*);
@@ -158,29 +158,31 @@ public:
 	// Is a conversion complete on the wire? Only applies to the first sensor on the wire.
 	bool isConversionComplete(void);
 
-	int16_t millisToWaitForConversion(uint8_t);
+  static uint16_t millisToWaitForConversion(uint8_t);
   
-	// Sends command to one device to save values from scratchpad to EEPROM by index
-	// Returns true if no errors were encountered, false indicates failure
-	bool saveScratchPadByIndex(uint8_t);
+  uint16_t millisToWaitForConversion();
   
-	// Sends command to one or more devices to save values from scratchpad to EEPROM
-	// Returns true if no errors were encountered, false indicates failure
-	bool saveScratchPad(const uint8_t* = nullptr);
+  // Sends command to one device to save values from scratchpad to EEPROM by index
+  // Returns true if no errors were encountered, false indicates failure
+  bool saveScratchPadByIndex(uint8_t);
   
-	// Sends command to one device to recall values from EEPROM to scratchpad by index
-	// Returns true if no errors were encountered, false indicates failure
-	bool recallScratchPadByIndex(uint8_t);
+  // Sends command to one or more devices to save values from scratchpad to EEPROM
+  // Returns true if no errors were encountered, false indicates failure
+  bool saveScratchPad(const uint8_t* = nullptr);
   
-	// Sends command to one or more devices to recall values from EEPROM to scratchpad
-	// Returns true if no errors were encountered, false indicates failure
-	bool recallScratchPad(const uint8_t* = nullptr);
+  // Sends command to one device to recall values from EEPROM to scratchpad by index
+  // Returns true if no errors were encountered, false indicates failure
+  bool recallScratchPadByIndex(uint8_t);
   
-	// Sets the autoSaveScratchPad flag
-	void setAutoSaveScratchPad(bool);
+  // Sends command to one or more devices to recall values from EEPROM to scratchpad
+  // Returns true if no errors were encountered, false indicates failure
+  bool recallScratchPad(const uint8_t* = nullptr);
   
-	// Gets the autoSaveScratchPad flag
-	bool getAutoSaveScratchPad(void);
+  // Sets the autoSaveScratchPad flag
+  void setAutoSaveScratchPad(bool);
+  
+  // Gets the autoSaveScratchPad flag
+  bool getAutoSaveScratchPad(void);
 
 #if REQUIRESALARMS
 
@@ -242,10 +244,13 @@ public:
 	static float toCelsius(float);
 
 	// convert from raw to Celsius
-	static float rawToCelsius(int32_t);
+	static float rawToCelsius(int16_t);
+
+    // convert from Celsius to raw
+	static int16_t celsiusToRaw(float);
 
 	// convert from raw to Fahrenheit
-	static float rawToFahrenheit(int32_t);
+	static float rawToFahrenheit(int16_t);
 
 #if REQUIRESNEW
 
@@ -256,6 +261,8 @@ public:
 	void operator delete(void*);
 
 #endif
+
+	void blockTillConversionComplete(uint8_t);
 
 private:
 	typedef uint8_t ScratchPad[9];
@@ -277,8 +284,8 @@ private:
 	// used to requestTemperature to dynamically check if a conversion is complete
 	bool checkForConversion;
 
-    // used to determine if values will be saved from scratchpad to EEPROM on every scratchpad write
-    bool autoSaveScratchPad;
+  // used to determine if values will be saved from scratchpad to EEPROM on every scratchpad write
+  bool autoSaveScratchPad;
 
 	// count of devices on the bus
 	uint8_t devices;
@@ -290,9 +297,8 @@ private:
 	OneWire* _wire;
 
 	// reads scratchpad and returns the raw temperature
-	int32_t calculateTemperature(const uint8_t*, uint8_t*);
+	int16_t calculateTemperature(const uint8_t*, uint8_t*);
 
-	void blockTillConversionComplete(uint8_t);
 
 	// Returns true if all bytes of scratchPad are '\0'
 	bool isAllZeros(const uint8_t* const scratchPad, const size_t length = 9);
